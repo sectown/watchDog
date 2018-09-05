@@ -1,0 +1,99 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>Tornado Websocket</title>
+
+</head>
+<script src="{{ static_url('js/jquery.min.js')}}" type="text/javascript"></script>
+<script type="text/javascript">
+    var ws;
+    var info;
+    ws = new WebSocket("ws://localhost:8080/ws");
+    //	function onLoad(){
+    //		ws = new WebSocket("ws://localhost:8080/ws");
+    //		ws.onmessage = function(e){
+    //			alert(e.data)
+    //		}
+    //	};
+    ws.onmessage = function (event) {
+        var data = JSON.parse(event.data);
+        var type = data['type'];
+        var detail = data['detail'];
+        info = detail['info']
+        if (type == 'show') {
+            document.getElementById('content1').innerHTML = detail['info']
+        }
+        else if (type == 'info') {
+            document.getElementById('content2').innerHTML = ''
+            for (host in info) {
+                var s = ''
+                var hostInfo = info[host]
+                for (item in hostInfo) {
+                    s = s + ":" + hostInfo[item]
+
+                }
+                if (hostInfo['checked']) {
+//                    console.log(hostInfo['checked'])
+                    document.getElementById('content2').innerHTML += `<p>${s}<input class='host_item'type='checkbox' onclick="checkbox_change(this)" value='${host}' checked="checked" }"></p>`
+
+                } else {
+                    document.getElementById('content2').innerHTML += `<p>${s}<input class='host_item'type='checkbox' onclick="checkbox_change(this)" value='${host}' }"></p>`
+                }
+            }
+        }
+        else if(type=='operation'){
+            console.log(detail['result'])
+        }
+
+    };
+
+    function checkbox_change(e) {
+        var mac = e.value
+        info[mac].checked = e.checked
+
+        var data = {
+            'type': 'info',
+            'detail': {
+                "mode": "",
+                "mac": mac,
+                "code": "",
+                "result": "",
+                'info':info[mac]
+            }
+        }
+//        console.log(JSON.stringify(data))
+        ws.send(JSON.stringify(data))
+    }
+
+    function sendMsg() {
+        ws.send('{"type":"show","detail":{"code":"HELLO"}}')
+    }
+
+    function sendCmd() {
+
+        var data={
+            'type': 'operation',
+            'detail': {
+                "mode": "cmd",
+                "mac": "",
+                "code": document.getElementById('msg').value,
+                "result": "",
+                'info':""
+            }
+        }
+        ws.send(JSON.stringify(data))
+//        var v = document.getElementById('msg').value
+//        ws.send('{"type":"operation","detail":{"mode":"cmd","code":"ls","mac":"784f437bf5f1"}}')
+    }
+</script>
+<!--<body onload='onLoad();'>-->
+<body>
+Message to send: <input type="text" id="msg"/>
+<input type="button" onclick="sendCmd();" value="发送指令"/>
+<input type="button" onclick="sendMsg();" value="开始监听"/>
+<div id="content1"></div>
+<div id="content2">
+</div>
+</body>
+</html>
